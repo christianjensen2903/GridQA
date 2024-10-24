@@ -186,7 +186,7 @@ def generate_dataset(
 
 if __name__ == "__main__":
 
-    dataset = generate_dataset(configurations)
+    dataset = generate_dataset(configurations, samples_per_configuration=10)
     print(f"Generated {len(dataset)} samples")
 
     with open("dataset.json", "w") as f:

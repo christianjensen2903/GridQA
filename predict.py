@@ -4,8 +4,9 @@ import random
 import numpy as np
 from generate_dataset import Sample
 import json
+from tqdm import tqdm
 
-llm = GPT4(mini=True)
+llm = GPT4(mini=False)
 formatter = Formatter()
 
 # Set random seed
@@ -32,7 +33,7 @@ letter_mapping = {
 
 predictions: dict[str, str] = {}
 correct = 0
-for sample in dataset[:10]:
+for sample in tqdm(dataset):
 
     prompt = f"""
 Your are given a grid with one or more shapes in it.
@@ -56,7 +57,7 @@ Only answer with either rotate, flip, shift, or static. Nothing else.
     if response == sample.transformation.type.value:
         correct += 1
 
-print(f"Accuracy: {correct / 10}")
+print(f"Accuracy: {correct / len(dataset)}")
 # Save predictions
 with open("predictions.json", "w") as f:
     json.dump(predictions, f)
