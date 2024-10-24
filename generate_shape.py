@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def generate_random_shape(n):
+def generate_random_shape(n, value: int = 1):
     grid_size = n * 2
     grid = np.zeros((grid_size, grid_size), dtype=int)
 
     # Start the shape from the center of the grid
     x, y = grid_size // 2, grid_size // 2
-    grid[x, y] = 1
+    grid[x, y] = value
     shape_coordinates = [(x, y)]
 
     # Directions: Up, Down, Left, Right
@@ -30,7 +30,7 @@ def generate_random_shape(n):
             and 0 <= new_y < grid_size
             and grid[new_x, new_y] == 0
         ):
-            grid[new_x, new_y] = 1
+            grid[new_x, new_y] = value
             shape_coordinates.append((new_x, new_y))
 
     # Reduce the grid to the size of the shape
@@ -72,12 +72,12 @@ def is_distinguishable(grid):
     return True
 
 
-def generate_distinguishable_shape(n, max_attempts=1000):
+def generate_distinguishable_shape(n, max_attempts=1000, value: int = 1):
     """
     Generates a random shape that is distinguishable by rotation and reflection.
     """
     for i in range(max_attempts):
-        grid = generate_random_shape(n)
+        grid = generate_random_shape(n, value)
         if is_distinguishable(grid):
             return grid
     raise Exception(
@@ -87,13 +87,13 @@ def generate_distinguishable_shape(n, max_attempts=1000):
     )
 
 
-def generate_rotational_shape(n):
+def generate_rotational_shape(n, value: int = 1):
     """
     Generate a shape that is distinguishable by rotation and have a clear center (odd width and height)
     """
-    grid = generate_distinguishable_shape(n)
+    grid = generate_distinguishable_shape(n, value=value)
     if grid.shape[0] % 2 == 0 or grid.shape[1] % 2 == 0:
-        return generate_rotational_shape(n)
+        return generate_rotational_shape(n, value=value)
     return grid
 
 
