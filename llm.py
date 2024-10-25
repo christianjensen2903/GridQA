@@ -1,6 +1,7 @@
 from openai import OpenAI
 from abc import ABC, abstractmethod
 import dotenv
+from anthropic import Anthropic
 
 
 class LLM(ABC):
@@ -26,8 +27,23 @@ class GPT4(LLM):
         return response.choices[0].message.content
 
 
+class Claude(LLM):
+    def __init__(self, model="claude-3-5-sonnet-latest"):
+        dotenv.load_dotenv()
+        self.client = Anthropic()
+        self.model = model
+
+    def generate(self, prompt: str, temperature: float = 0.0, seed: int = 42) -> str:
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=10,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[-1].text
+
+
 if __name__ == "__main__":
-    generator = GPT4()
+    generator = Claude()
     prompt = "What color is the top-left cell?"
     response = generator.generate(prompt)
     print(response)

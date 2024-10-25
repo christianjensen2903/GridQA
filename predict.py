@@ -1,4 +1,4 @@
-from llm import LLM, GPT4
+from llm import LLM, GPT4, Claude
 from formatter import Formatter
 import random
 import numpy as np
@@ -6,7 +6,8 @@ from generate_dataset import Sample
 import json
 from tqdm import tqdm
 
-llm = GPT4(mini=False)
+# llm = GPT4(mini=False)
+llm = Claude()
 formatter = Formatter()
 
 # Set random seed

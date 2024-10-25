@@ -2,3 +2,4 @@ matplotlib==3.9.2
 numpy==2.1.2
 openai==1.51.1
 python-dotenv==1.0.1
+anthropic==0.37.1
