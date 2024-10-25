@@ -109,9 +109,9 @@ def generate_dataset(
 
             shape_after = shape_before.copy()
             if choice == TransformationType.ROTATE:
-                degrees = random.choice([90, 180, 270])
-                shape_after = np.rot90(shape_after, degrees)
-                transformation_params["degrees"] = degrees
+                n_90_flips = random.choice([1, 2, 3])
+                shape_after = np.rot90(shape_after, n_90_flips)
+                transformation_params["degrees"] = int(360 - n_90_flips * 90)
             elif choice == TransformationType.FLIP:
                 shape_after = np.fliplr(shape_after)
 
