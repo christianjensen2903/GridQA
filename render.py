@@ -56,23 +56,7 @@ def add_grid_border(rgb_grid: np.ndarray, border_size: int):
     return rgb_grid_border
 
 
-def write_text(grid: np.ndarray, text: str, position: tuple[int, int]):
-    x, y = position
-    cv2.putText(
-        grid,
-        text,
-        (x, y),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (0, 0, 0),
-        2,
-        cv2.LINE_AA,
-    )
-
-
 def create_rgb_grid(grid: np.ndarray, cell_size: int, edge_size: int):
-
-    rows, columns = grid.shape
     rgb_grid = grid_to_rgb(grid, cell_size, edge_size)
     rgb_grid = add_grid_border(rgb_grid, border_size=cell_size)
 
