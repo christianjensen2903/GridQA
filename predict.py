@@ -6,12 +6,12 @@ from generate_dataset import Sample
 import json
 from tqdm import tqdm
 
-# llm = GPT4(mini=False)
-llm = Claude()
+llm = GPT4(mini=True)
+# llm = Claude()
 formatter = Formatter()
 
 # Set random seed
-seed = 42
+seed = 1
 random.seed(seed)
 np.random.seed(seed)
 
@@ -55,7 +55,7 @@ Only answer with either rotate, flip, shift, or static. Nothing else.
 
     response = llm.generate(prompt, temperature=0.0, seed=seed)
     predictions[sample.uuid] = response
-    if response == sample.transformation.type.value:
+    if response == sample.configuration.transformation_type.value:
         correct += 1
 
 print(f"Accuracy: {correct / len(dataset)}")
