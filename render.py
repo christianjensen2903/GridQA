@@ -1,9 +1,8 @@
 from io import BytesIO
 import base64
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import cv2
-import matplotlib.pyplot as plt
 
 rgb_lookup = {
     0: (0, 0, 0),
@@ -140,33 +139,14 @@ def add_arrow_between_images(
     return np.array(new_image)
 
 
-from PIL import Image, ImageDraw, ImageFont
-import matplotlib.pyplot as plt
-import numpy as np
-
-
 def show_input_output_side_by_side(
     input_grid: np.ndarray, output_grid: np.ndarray, cell_size: int, edge_size: int
 ):
-    images = []
-    demonstration_padding = 20
-    text_padding = 10  # Padding for space to write the text
-
-    max_height = 0
-    max_height = max(max_height, input_grid.shape[0], output_grid.shape[0])
-
-    font_size = max(max_height * 2, 16)
-    font = ImageFont.load_default(size=font_size)
-
     input_rgb = create_rgb_grid(input_grid, cell_size, edge_size)
     output_rgb = create_rgb_grid(output_grid, cell_size, edge_size)
     combined_image = add_arrow_between_images(input_rgb, output_rgb)
 
-    # Convert to PIL image to draw text
-    img_pil = Image.fromarray(combined_image)
-    # draw = ImageDraw.Draw(img_pil)
-
-    return img_pil
+    return Image.fromarray(combined_image)
 
 
 def grid_to_base64_png_oai_content(grid: np.ndarray, cell_size: int, edge_size: int):
