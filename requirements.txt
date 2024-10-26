@@ -3,3 +3,7 @@ numpy==2.1.2
 openai==1.51.1
 python-dotenv==1.0.1
 anthropic==0.37.1
+scikit-learn==1.5.2
+pydantic==2.9.2
+tqdm==4.66.5
+opencv-python==4.10.0.84
