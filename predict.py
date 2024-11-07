@@ -5,34 +5,39 @@ import numpy as np
 from generate_dataset import Sample
 import json
 from tqdm import tqdm
-
-# PREDICTION_FILE = "predictions_gpt4_mini.json"
-# llm = GPT4(mini=True)
-
-# PREDICTION_FILE = "predictions_gpt4o.json"
-# llm = GPT4(mini=False)
-
-# PREDICTION_FILE = "predictions_Claude.json"
-# llm = Claude()
-
-# PREDICTION_FILE = "predictions_gemini-1.5-flash.json"
-# llm = Gemini()
-
-PREDICTION_FILE = "predictions_gemini-1.5-pro.json"
-llm = Gemini(model="gemini-1.5-pro")
-
-formatter = Formatter()
-
-# Set random seed
-seed = 42
-random.seed(seed)
-np.random.seed(seed)
+import base64
+from io import BytesIO
+import matplotlib.pyplot as plt
+import prompts
+from typing import Literal
 
 
 def load_dataset(path: str) -> list[Sample]:
     with open(path, "r") as f:
         samples = [Sample.model_validate(sample) for sample in json.load(f)]
         return samples
+
+
+def create_comparison_image(grid_before, grid_after):
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    axs[0].set_title("Before")
+    axs[1].set_title("After")
+    axs[0].imshow(grid_before, cmap="Greys", interpolation="none")
+    axs[1].imshow(grid_after, cmap="Greys", interpolation="none")
+    axs[0].tick_params(labelbottom=False, labelleft=False)
+    axs[1].tick_params(labelbottom=False, labelleft=False)
+
+    # Add an arrow between the two grids to show transition
+    fig.text(0.5, 0.5, "→", ha="center", va="center", fontsize=30)
+
+    # Save the figure to a BytesIO buffer
+    buffer = BytesIO()
+    plt.savefig(buffer, format="PNG", bbox_inches="tight")
+    plt.close(fig)
+    buffer.seek(0)
+    image_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return image_base64
 
 
 dataset = load_dataset("dataset.json")
@@ -45,36 +50,62 @@ letter_mapping = {
     5: "P",
 }
 
-predictions: dict[str, str] = {}
-correct = 0
-for sample in tqdm(dataset):
+formatter = Formatter()
 
-    prompt = f"""
-Your are given a grid with one or more shapes in it.
 
-The red shape (represented by R's) can be rotated (90, 180, 270 degrees), flipped horizontally, shifted (left, right, up, down), or left static.
+def grid_to_text(grid: list[list[int]]) -> str:
+    return formatter.grid_to_text(np.array(grid), letter_mapping)
 
-Your task is to determine the transformation that was applied to the shape.
 
-Here is the grid before the transformation:
-{formatter.grid_to_text(np.array(sample.grid_before), letter_mapping)}
+def predict(
+    model: LLM, input_type: Literal["image", "text", "image-text"], seed: int = 42
+) -> dict[str, str]:
 
-Here is the grid after the transformation:
-{formatter.grid_to_text(np.array(sample.grid_after), letter_mapping)}
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
 
-Your answer should be one of the following: rotate, flip, shift, static
-Only answer with either rotate, flip, shift, or static. Nothing else.
-"""
-    response = llm.generate(prompt, temperature=0.0, seed=seed)
-    word = response.replace("\n", " ").split(" ")[0]
-    # print("\nlabel:", sample.transformation.type.value)
-    # print("prediction:", word)
-    # print("response:" , response)
-    predictions[sample.uuid] = word
-    if response == sample.transformation.type.value:
-        correct += 1
+    predictions: dict[str, str] = {}
+    for sample in tqdm(dataset):
 
-print(f"Accuracy: {correct / len(dataset)}")
-# Save predictions
-with open(PREDICTION_FILE, "w") as f:
-    json.dump(predictions, f)
+        if input_type == "image-text":
+            prompt = prompts.image_text_prompt
+        elif input_type == "image":
+            prompt = prompts.image_prompt
+        elif input_type == "text":
+            prompt = prompts.text_prompt
+
+        prompt = prompt.format(
+            grid_before=grid_to_text(sample.grid_before),
+            grid_after=grid_to_text(sample.grid_after),
+        )
+
+        image = (
+            create_comparison_image(sample.grid_before, sample.grid_after)
+            if input_type != "text"
+            else None
+        )
+
+        response = model.generate(prompt, image=image, temperature=0.0, seed=seed)
+        prediction = response.replace("\n", " ").split(" ")[0]
+        predictions[sample.uuid] = prediction
+
+    return predictions
+
+
+if __name__ == "__main__":
+    models = {
+        "gpt4o": GPT4(model="gpt-4o-2024-08-06"),
+        "gpt4-mini": GPT4(model="gpt-4o-mini-2024-07-18"),
+        "claude-3.5-sonnet": Claude(model="claude-3-5-sonnet-2024102"),
+        "gemini-1.5-flash": Gemini(model="gemini-1.5-flash-002"),
+        "gemini-1.5-pro": Gemini(model="gemini-1.5-pro-002"),
+    }
+
+    for input_type in ["image", "text", "image-text"]:
+        for model_name, model in models.items():
+            predictions = predict(model, input_type)
+            print(f"{model_name} {input_type}: {predictions}")
+
+        with open(f"predictions2/{model_name}_{input_type}.json", "w") as f:
+            json.dump(predictions, f)

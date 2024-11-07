@@ -12,24 +12,32 @@ import base64
 class LLM(ABC):
     @abstractmethod
     def generate(
-        self, prompt: str, iamge=None, temperature: float = 0.0, seed: int = 42
+        self,
+        prompt: str,
+        image: str | None = None,
+        temperature: float = 0.0,
+        seed: int = 42,
     ) -> str:
         pass
 
 
 class GPT4(LLM):
-    def __init__(self, mini: bool = False):
+    def __init__(self, model: str = "gpt-4o"):
         dotenv.load_dotenv()
         self.client = OpenAI()
-        self.mini = mini
+        self.model = model
 
     def generate(
-        self, prompt: str, image=None, temperature: float = 0.0, seed: int = 42
+        self,
+        prompt: str,
+        image: str | None = None,
+        temperature: float = 0.0,
+        seed: int = 42,
     ) -> str:
 
         if image is not None:
             response = self.client.chat.completions.create(
-                model="gpt-4o" if not self.mini else "gpt-4o-mini",
+                model=self.model,
                 temperature=temperature,
                 seed=seed,
                 messages=[
@@ -47,7 +55,7 @@ class GPT4(LLM):
             )
         else:
             response = self.client.chat.completions.create(
-                model="gpt-4o" if not self.mini else "gpt-4o-mini",
+                model=self.model,
                 temperature=temperature,
                 seed=seed,
                 messages=[{"role": "user", "content": prompt}],
@@ -64,7 +72,11 @@ class Claude(LLM):
         self.model = model
 
     def generate(
-        self, prompt: str, image=None, temperature: float = 0.0, seed: int = 42
+        self,
+        prompt: str,
+        image: str | None = None,
+        temperature: float = 0.0,
+        seed: int = 42,
     ) -> str:
         if image is not None:
             response = self.client.messages.create(
@@ -105,7 +117,11 @@ class Gemini(LLM):
         self.model = model
 
     def generate(
-        self, prompt: str, image=None, temperature: float = 0.0, seed: int = 42
+        self,
+        prompt: str,
+        image: str | None = None,
+        temperature: float = 0.0,
+        seed: int = 42,
     ) -> str:
 
         model = genai.GenerativeModel(self.model)
