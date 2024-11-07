@@ -34,34 +34,24 @@ class GPT4(LLM):
         temperature: float = 0.0,
         seed: int = 42,
     ) -> str:
+        messages = [{"role": "user", "content": prompt}]
+        if image:
+            messages[0]["content"] = [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{image}"},
+                },
+            ]
 
-        if image is not None:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                temperature=temperature,
-                seed=seed,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": f"data:image/png;base64,{image}"},
-                            },
-                        ],
-                    }
-                ],
-            )
-        else:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                temperature=temperature,
-                seed=seed,
-                messages=[{"role": "user", "content": prompt}],
-            )
+        response = self.client.chat.completions.create(
+            model=self.model,
+            temperature=temperature,
+            seed=seed,
+            messages=messages,
+        )
 
-        assert response.choices[0].message.content is not None
+        assert response.choices[0].message.content
         return response.choices[0].message.content
 
 
@@ -78,35 +68,26 @@ class Claude(LLM):
         temperature: float = 0.0,
         seed: int = 42,
     ) -> str:
-        if image is not None:
-            response = self.client.messages.create(
-                model=self.model,
-                temperature=temperature,
-                max_tokens=10,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": "image/png",
-                                    "data": image,
-                                },
-                            },
-                        ],
-                    }
-                ],
-            )
-        else:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=10,
-                temperature=temperature,
-                messages=[{"role": "user", "content": prompt}],
-            )
+        messages = [{"role": "user", "content": prompt}]
+        if image:
+            messages[0]["content"] = [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": image,
+                    },
+                },
+            ]
+
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=10,
+            temperature=temperature,
+            messages=messages,
+        )
         return response.content[-1].text
 
 
@@ -123,29 +104,20 @@ class Gemini(LLM):
         temperature: float = 0.0,
         seed: int = 42,
     ) -> str:
-
         model = genai.GenerativeModel(self.model)
+        content = [prompt]
 
-        if image is not None:
-            # data = BytesIO(image.encode())
-            # myfile = genai.upload_file(
-            #     data.getvalue(), mime_type="image/png", display_name="image.png"
-            # )
+        if image:
             image_data = base64.b64decode(image)
             data = Image.open(BytesIO(image_data))
-            result = model.generate_content(
-                [data, "\n\n", prompt],
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                ),
-            )
-        else:
-            result = model.generate_content(
-                [prompt],
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                ),
-            )
+            content = [data, "\n\n", prompt]
+
+        result = model.generate_content(
+            content,
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+            ),
+        )
 
         return result.text
 
