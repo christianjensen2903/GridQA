@@ -8,9 +8,15 @@ import json
 import uuid
 
 # Set random seed
-seed = 1  # Seed to ensure it could generate without errors
+seed = 5141234  # Seed to ensure it could generate without errors
 random.seed(seed)
 np.random.seed(seed)
+
+
+class Configuration(BaseModel):
+    shape_size: int
+    grid_size: int
+    number_of_shapes: int
 
 
 class TransformationType(Enum):
@@ -22,14 +28,7 @@ class TransformationType(Enum):
 
 class Transformation(BaseModel):
     type: TransformationType
-    # transformation_params: dict
-
-
-class Configuration(BaseModel):
-    shape_size: int
-    grid_size: int
-    number_of_shapes: int
-    transformation_type: TransformationType
+    transformation_params: dict
 
 
 class Sample(BaseModel):
@@ -37,45 +36,21 @@ class Sample(BaseModel):
     configuration: Configuration
     grid_before: list[list[int]]
     grid_after: list[list[int]]
+    transformation: Transformation
 
 
-transformation_types = [
-    TransformationType.ROTATE,
-    TransformationType.FLIP,
-    TransformationType.SHIFT,
-    TransformationType.STATIC,
-]
 configurations = (
     [
-        Configuration(
-            shape_size=size,
-            grid_size=20,
-            number_of_shapes=1,
-            transformation_type=transformation_type,
-        )
-        for size in range(10, 31, 5)
-        for transformation_type in transformation_types
-        # the 5 shape size is generated below
+        Configuration(shape_size=size, grid_size=20, number_of_shapes=1)
+        for size in range(10, 31, 5)  # the 5 shape size is generated below
     ]
     + [
-        Configuration(
-            shape_size=5,
-            grid_size=size,
-            number_of_shapes=1,
-            transformation_type=transformation_type,
-        )
+        Configuration(shape_size=5, grid_size=size, number_of_shapes=1)
         for size in range(10, 31, 5)
-        for transformation_type in transformation_types
     ]
     + [
-        Configuration(
-            shape_size=5,
-            grid_size=20,
-            number_of_shapes=n,
-            transformation_type=transformation_type,
-        )
-        for n in range(2, 6)
-        for transformation_type in transformation_types
+        Configuration(shape_size=5, grid_size=20, number_of_shapes=n)
+        for n in range(2, 6)  # The 1 shape is generated above
     ]
 )
 
@@ -117,29 +92,31 @@ def generate_dataset(
         shape_size = configuration.shape_size
         grid_size = configuration.grid_size
         number_of_shapes = configuration.number_of_shapes
-        choice = configuration.transformation_type
 
         for i in range(samples_per_configuration):
 
-            print(choice)
-
             shape_before = generate_rotational_shape(shape_size)
 
-            # options = [
-            #     TransformationType.ROTATE,
-            #     TransformationType.FLIP,
-            #     TransformationType.SHIFT,
-            #     TransformationType.STATIC,
-            # ]
+            options = [
+                TransformationType.ROTATE,
+                TransformationType.FLIP,
+                TransformationType.SHIFT,
+                TransformationType.STATIC,
+            ]
 
-            # choice = random.choice(options)
-            # transformation_params: dict = {}
+            choice = random.choice(options)
+            # choice = options[i%len(options)]
+            print("")
+            print(random.choice(options))
+            print(options[i%len(options)])
+
+            transformation_params: dict = {}
 
             shape_after = shape_before.copy()
             if choice == TransformationType.ROTATE:
                 n_90_flips = random.choice([1, 2, 3])
                 shape_after = np.rot90(shape_after, n_90_flips)
-                # transformation_params["degrees"] = int(360 - n_90_flips * 90)
+                transformation_params["degrees"] = int(360 - n_90_flips * 90)
             elif choice == TransformationType.FLIP:
                 shape_after = np.fliplr(shape_after)
 
@@ -162,8 +139,8 @@ def generate_dataset(
                 elif direction == "down":
                     y_offset = offset
 
-                # transformation_params["direction"] = direction
-                # transformation_params["offset"] = offset
+                transformation_params["direction"] = direction
+                transformation_params["offset"] = offset
 
             grid = np.zeros((grid_size, grid_size))
 
@@ -196,19 +173,16 @@ def generate_dataset(
                 + x_offset,
             ] = shape_after
 
-            # plot_shape(grid_before)
-            # plot_shape(grid_after)
-
             # Add sample to the dataset
             dataset.append(
                 Sample(
                     configuration=configuration,
                     grid_before=grid_before.tolist(),
                     grid_after=grid_after.tolist(),
-                    # transformation=Transformation(
-                    #     type=choice,
-                    #     transformation_params=transformation_params,
-                    # ),
+                    transformation=Transformation(
+                        type=choice,
+                        transformation_params=transformation_params,
+                    ),
                 )
             )
 
@@ -217,7 +191,7 @@ def generate_dataset(
 
 if __name__ == "__main__":
 
-    dataset = generate_dataset(configurations, samples_per_configuration=3)
+    dataset = generate_dataset(configurations, samples_per_configuration=20)
     print(f"Generated {len(dataset)} samples")
 
     with open("dataset.json", "w") as f:

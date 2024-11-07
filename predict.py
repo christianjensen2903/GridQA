@@ -1,4 +1,4 @@
-from llm import LLM, GPT4, Claude
+from llm import GPT4, LLM, Claude, Gemini
 from formatter import Formatter
 import random
 import numpy as np
@@ -6,12 +6,25 @@ from generate_dataset import Sample
 import json
 from tqdm import tqdm
 
-llm = GPT4(mini=True)
+# PREDICTION_FILE = "predictions_gpt4_mini.json"
+# llm = GPT4(mini=True)
+
+# PREDICTION_FILE = "predictions_gpt4o.json"
+# llm = GPT4(mini=False)
+
+# PREDICTION_FILE = "predictions_Claude.json"
 # llm = Claude()
+
+# PREDICTION_FILE = "predictions_gemini-1.5-flash.json"
+# llm = Gemini()
+
+PREDICTION_FILE = "predictions_gemini-1.5-pro.json"
+llm = Gemini(model="gemini-1.5-pro")
+
 formatter = Formatter()
 
 # Set random seed
-seed = 1
+seed = 42
 random.seed(seed)
 np.random.seed(seed)
 
@@ -52,13 +65,16 @@ Here is the grid after the transformation:
 Your answer should be one of the following: rotate, flip, shift, static
 Only answer with either rotate, flip, shift, or static. Nothing else.
 """
-
     response = llm.generate(prompt, temperature=0.0, seed=seed)
-    predictions[sample.uuid] = response
-    if response == sample.configuration.transformation_type.value:
+    word = response.replace("\n", " ").split(" ")[0]
+    # print("\nlabel:", sample.transformation.type.value)
+    # print("prediction:", word)
+    # print("response:" , response)
+    predictions[sample.uuid] = word
+    if response == sample.transformation.type.value:
         correct += 1
 
 print(f"Accuracy: {correct / len(dataset)}")
 # Save predictions
-with open("predictions.json", "w") as f:
+with open(PREDICTION_FILE, "w") as f:
     json.dump(predictions, f)
